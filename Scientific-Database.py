@@ -1,42 +1,50 @@
-from bs4 import BeautifulSoup
-import re
-import requests
+from selenium import webdriver
 import time
+import re
 
-Database_SecondaryList = []
+Database_PrimaryList = []
 
-for n in range(1, 100):
-    print("Page :" + str(n))
-    Database_URL = "https://scholar.google.com/scholar?start=" + str(n) + "0&q=%22schizophrenia%22+AND+(%22social+media%22OR+%22internet%22)+AND+(%22medical%22+OR+%22health%22)+AND+%22information%22&hl=fr&as_sdt=0,5&as_ylo=2006&as_yhi=2019"
-    Database_Response = requests.get(Database_URL)
-    Database_Page = BeautifulSoup(Database_Response.text, "html.parser")
-    Database_PrimaryList = Database_Page.body.find_all("h3")
-    for o in range(0, len(Database_PrimaryList)):
-        if Database_PrimaryList[o].find("a") is None:
-            continue
-        else:
-            Database_PrimaryList[o] = Database_PrimaryList[o].find("a")
-            Database_SecondaryList.append(Database_PrimaryList[o].encode_contents().decode("UTF-8"))
+# Preparing Brave as Chrome, because using chromedriver
+options = webdriver.chrome.options.Options()
+options.binary_location = "/usr/bin/brave-browser"
+browser = webdriver.Chrome(chrome_options = options)
+
+# Lots of time.sleeps in order to avoid being flaged as a robot by Google
+browser.get("https://scholar.google.com")
+time.sleep(3)
+# Finding the input field for research and entering the desired keywords
+browser.find_element_by_name("q").send_keys("'schizophrenia' AND ('social media' OR 'internet') AND ('medical' OR 'health') AND 'information'")
+time.sleep(3)
+# Clicking the search button
+browser.find_element_by_id("gs_hdr_tsb").click()
+time.sleep(3)
+# Clicking on selecting a specific range of dates
+browser.find_element_by_id("gs_res_sb_yyc").click()
+time.sleep(3)
+browser.find_element_by_id("gs_as_ylo").send_keys("2006")
+time.sleep(3)
+browser.find_element_by_xpath("//*[@id=\"gs_res_sb_yyf\"]/div[1]/div[2]/input").send_keys("2019")
+time.sleep(3)
+browser.find_element_by_xpath("//*[@id=\"gs_res_sb_yyf\"]/div[2]/button").click()
+time.sleep(3)
+for n in range(0, 100):
+    for i in browser.find_elements_by_tag_name("h3"):
+        Database_PrimaryList.append(i.text)
+    browser.find_element_by_xpath("//*[@id=\"gs_n\"]/center/table/tbody/tr/td[12]/a").click()
     time.sleep(10)
 
-for p in range(0, len(Database_SecondaryList)):
-    Database_SecondaryList[p] = re.sub("<b>|</b>", "", Database_SecondaryList[p])
-Database_SecondaryList.sort()
+# PubMed Central results can be stored on a "Summary (Text)" file but need to be modified in order to have only the title on each line
+#with open("pmc_result.txt", "r") as f:
+#    lines = f.readlines()
+#with open("pmc.txt", "w+") as f:
+#    for line in lines:
+#        if re.search("^\d+: ", line):
+#            f.write(re.sub("^\d+:  ", "", line))
 
-Database_file = open("Database.txt", "w+")
-for p in range(0, len(Database_SecondaryList)):
-    Database_file.write(str(Database_SecondaryList[p]) + "\n")
-
-with open("pmc_result.txt", "r") as f:
-    lines = f.readlines()
-with open("pmc.txt", "w+") as f:
-    for line in lines:
-        if re.search("^\d+: ", line):
-            f.write(re.sub("^\d+:  ", "", line))
-
-with open("pubmed_result.txt", "r") as f:
-    lines = f.readlines()
-with open("pubmed.txt", "w+") as f:
-    for line in lines:
-        if re.search("TI  - ", line):
-            f.write(re.sub("TI  - ", "", line))
+# PubMed results stored locally in a "Summary (Text)" format and treated in order to only display the title
+#with open("pubmed_result.txt", "r") as f:
+#    lines = f.readlines()
+#with open("pubmed.txt", "w+") as f:
+#    for line in lines:
+#        if re.search("TI  - ", line):
+#            f.write(re.sub("TI  - ", "", line))
