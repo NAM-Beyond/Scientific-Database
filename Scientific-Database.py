@@ -72,18 +72,20 @@ with open("pubmed.txt", "w+") as g:
             g.write(re.sub("TI  - ", "", line))
 
 # Gathering all results in one main file, with remove of duplicates
-with open("scholar.txt", "r") as h:
-    lines = h.readlines()
-    for line in lines:
-        Database_SecondaryList.append(line)
-with open("pmc.txt", "r") as l:
-    lines = l.readlines()
-    for line in lines:
-        Database_SecondaryList.append(line)
-with open("pubmed.txt", "r") as j:
-    lines = j.readlines()
-    for line in lines:
-        Database_SecondaryList.append(line)
+def AddLines(textfile):
+    with open(textfile, "r") as h:
+        lines = h.readlines()
+        for line in lines:
+            templine = line.split()
+            for i in range(0, len(templine)):
+                templine[i] = templine[i].capitalize()
+            line = ""
+            for i in range(0, len(templine)):
+                line += templine[i] + " "
+            Database_SecondaryList.append(line)
+AddLines("pubmed.txt")
+AddLines("pmc.txt")
+AddLines("scholar.txt")
 Database_SecondaryList.sort()
 n = 0
 for i in range(0, len(Database_SecondaryList) - 1):
@@ -94,4 +96,4 @@ for i in range(0, len(Database_SecondaryList) - 1):
         n += 1
 with open("database.txt", "w+") as k:
     for i in Database_SecondaryList:
-        k.write(i)
+        k.write(i + "\n")
